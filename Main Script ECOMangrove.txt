@@ -1,0 +1,866 @@
+var St = require('users/117210029/backup:style');
+var ims //indexmangroveseries;
+var indexName;
+var border //cliparea;
+var prodVis //product visualization;
+var imVis //indexmangrovevisualization;
+var panelLegend //panel legend;
+
+//Drawing Tools
+//=======================================================
+var drawingTools = Map.drawingTools();
+// Don't make imports that correspond to the drawn points.
+Map.drawingTools().setLinked(false);
+var debug = ui.url.get('debug', true);
+
+// Create a control panel
+var panel = ui.Panel({style: {width: '360px', color:'131010'}});
+
+// Add version text and app title to the control panel
+panel.add(ui.Label({value: 'Version 1.0 - last update: 2025', style: St.version}));
+panel.add(ui.Label({value: 'ECOMangrove: Easy Calculator Object Mangrove', style: St.titleAPP}));
+
+// Add two buttons: "How to use" and "About"
+var ButtonFAQ = ui.Button({
+    label: 'How to use this tool?', 
+    style: St.ButtonPrincipal1, 
+    onClick: function() {
+        Map.add(FAQ_PANEL);
+    }
+});
+var ButtonAbout = ui.Button({
+    label: 'About ECOMangrove', 
+    style: St.ButtonAbout,  
+    onClick: function() {
+        Map.add(ABOUT_PANEL);
+    }
+});
+var PanelsButton = ui.Panel({
+    layout: ui.Panel.Layout.flow('horizontal'),
+    widgets: [ButtonFAQ, ButtonAbout]
+});
+
+// DESCRIPTION HOW TO USE ECOMangrove
+// ===============================================================================
+var FAQ_PANEL = ui.Panel({
+    layout: ui.Panel.Layout.flow('vertical'),
+    widgets: [
+        ui.Label({ value: 'How to use this Tool?', style: St.titleWidwet }), 
+        ui.Label({ value: '1. Draw a polygon to the area you need to calculate ', style: St.conte }),
+        ui.Label({ value: '2. Enter a start and end date for the time series, using the format Year-month-day (xxxx-xx-xx)', style: St.conte }),
+        ui.Label({ value: '3. Select a set of images: 1) Landsat-8, 2) Sentinel-2', style: St.conte }),
+        ui.Label({ value: '4. Select a mangrove index you need to calculate', style: St.conte }),
+        ui.Label({ value: '5. Click on "Calculate" and the selected mangrove index for the polygon appears on the map', style: St.conte }),        
+        ui.Label({ value: '6. Click on "New Polygon" to calculate the mangrove index of other polygons', style: St.conte }),
+    ],
+    style: { position: 'top-center', shown: true, width: '30%', height: '50%', padding: '5px', margin: '10px' }
+    
+});
+// ABOUT BOX
+var ABOUT_PANEL = ui.Panel({
+    layout: ui.Panel.Layout.flow('vertical'),
+    widgets: [
+        ui.Label({ value: 'About ECOMangrove', style: St.titleWidwet }),
+        ui.Label({ value: 'ECOMangrove is a tool to calculate mangrove index using Landsat-8 and Sentinel-2 image', style: St.conte }),
+        ui.Label({ value: 'By Agnes Risma', style: { fontWeight: 'bold', textAlign: 'center', padding: '5px', margin: 'auto' } }),
+    ],
+});
+
+// DROPDOWN LIST SATELITE
+var SATELITE_PANEL = ui.Panel({
+  layout: ui.Panel.Layout.flow('vertical'),
+   widgets:[
+     ui.Label({ value:'Satellites',style: St.titleWidwet}), 
+     ui.Label({ value:'Landsat-8', style: St.conte}),
+     ui.Label({ value:'Sentinel-2',style: St.conte})
+     
+  ],
+  style: {position: 'top-center',  shown: true,  width: '40%', height: '60%',  padding: '5px', margin: '10px'}
+});
+
+
+// DROPDOWN LIST MANGROVE INDEX
+var INDEX_PANEL = ui.Panel({
+  layout: ui.Panel.Layout.flow('vertical'),
+    widgets:[
+      ui.Label({ value:'MANGROVE INDEX AVAILABLE IN ECOMangrove',
+      style: { fontSize: '14px', fontWeight: 'bold', textAlign: 'center',padding: '20px',  margin: 'auto'}
+      }),
+      ui.Label({ value:'The following list shows the mangrove index and the formula ', style: {fontSize: '13px'}}),
+      ui.Label({ value:' ---------------------------------------------------------------------------', style: {fontSize: '13px'}}),
+      
+      ui.Label({ value:'Mangrove Index (MI)', style: {fontSize: '13px'}}),
+      ui.Label({ value:'-> ((NIR - SWIR) / (NIR * SWIR)) * 10000', style: {fontSize: '13px', color:'#727171'}}),
+      ui.Label({ value:'Combined Recognition Mangrove Index (CMRI)', style: {fontSize: '13px'}}),
+      ui.Label({ value:'-> ((NIR - R) / (NIR + R)) - ((G - NIR) / (G + NIR))', style: {fontSize: '13px', color:'#727171'}}),
+      ui.Label({ value:'Mangrove Vegetation Index (MVI)', style: {fontSize: '13px'}}),
+      ui.Label({ value:'-> ((NIR - G) / (SWIR - G))', style: {fontSize: '13px', color:'#727171'}}),
+      ui.Label({ value:'Normalized Different Mangrove Index (NDMI)', style: {fontSize: '13px'}}),
+      ui.Label({ value:'-> ((SWIR2 - G) / (SWIR2 + G)) '}),
+      ui.Label({ value:'Red Edge Mangrove Index (REMI)', style: {fontSize: '13px'}}),
+      ui.Label({ value:'-> ((RedEdge - Red) / (SWIR1 - Green))', style: {fontSize: '13px', color:'#727171'}}),
+      //ui.Label({ value:'Normalized Intertidal Mangrove Index', style: {fontSize: '13px'}}),
+      //ui.Label({ value:'-> ((3 * B4 - (B6 + B7 + B8)) / (3 * B4 + (B6 + B7 + B8)))}) ',  style: {fontSize: '13px', color:'#727171'}}),
+      //ui.Label({ value:'Mangrove Forest Index', style: {fontSize: '13px'}}),
+      //ui.Label({ value:'-> ((rho_lambda1.subtract(rhoB_lambda1) + (rho_lambda2.subtract(rhoB_lambda2)) + (rho_lambda3.subtract(rhoB_lambda3))+(rho_lambda4.subtract(rhoB_lambda4)) / 4', style: {fontSize: '13px', color:'#727171'} })
+    ],
+    style: { position: 'top-center',shown: true,width: '40%',height: '70%',padding: '0%',margin: '0%',}  
+});
+// Contact Me
+var contact = ui.Label({
+  value: 'Contact - Agnes Risma (117210029@student.upnyk.ac.id)',
+  style: {fontSize: '12px', textAlign: 'center',padding: '5px 5px', margin: 'auto'}
+});
+
+// To Close
+var CloseButton = ui.Button({label: 'Close',style: St.closeButton,
+  onClick: function(){
+    Map.remove(FAQ_PANEL);
+  }
+});
+var CloseButtonABOUT = ui.Button({label: 'Close',style: St.closeButton,
+  onClick: function(){
+    Map.remove(ABOUT_PANEL);
+  }
+});
+var CloseButtonSAT = ui.Button({label: 'Close',style: St.closeButton,
+  onClick: function(){
+    Map.remove(SATELITE_PANEL);
+  }
+});
+var CloseButtonINDEX = ui.Button({label: 'Close',style: St.closeButton,
+  onClick: function(){
+    Map.remove(INDEX_PANEL);
+  }
+});
+
+// Add to Panel
+panel.add(PanelsButton);
+panel.add(contact);
+
+// Close 
+ABOUT_PANEL.add(CloseButtonABOUT);
+FAQ_PANEL.add(CloseButton);
+SATELITE_PANEL.add(CloseButtonSAT);
+INDEX_PANEL.add(CloseButtonINDEX);
+
+
+// 5. NAVIGATION PANEL - OPTION SELECTION
+// ===============================================================================
+// 5.1. Add a panel with two labels for the start and end dates and the text boxes
+var Box_Data = ui.Panel({
+  layout: ui.Panel.Layout.flow('vertical'),
+  style: St.styleDatWiget, //border: '0.5px solid #000000' 
+  widgets: [
+    ui.Label({ value: 'Start and End Date', style: St.styleWiget }),
+  ]
+});
+
+var currentDate = ee.String(ee.Date(Date.now()).get('year')).cat('-')
+    .cat(ee.Date(Date.now()).format('MM')).cat('-')
+    .cat(ee.Date(Date.now()).format('dd'));
+
+var previousYearDate = ee.String(ee.Date(Date.now()).advance(-1, 'year').get('year')).cat('-')
+    .cat(ee.Date(Date.now()).format('MM')).cat('-')
+    .cat(ee.Date(Date.now()).format('dd'));
+
+var startDateTextbox = ui.Textbox({
+  placeholder: 'YYYY-MM-DD',
+  value: previousYearDate.getInfo(),
+  style: { maxWidth: '120px' }
+});
+
+var endDateTextbox = ui.Textbox({
+  placeholder: 'YYYY-MM-DD',
+  value: currentDate.getInfo(),
+  style: { maxWidth: '120px' }
+});
+panel.add(Box_Data);
+panel.add(ui.Panel([startDateTextbox, endDateTextbox], ui.Panel.Layout.flow('horizontal')));
+
+// 5.1.2 For Cloud Percentage
+var CloudTextLabel = ui.Label({
+    value: 'Cloudy Pixel Percentage:',
+    style: St.styleTexTConf
+});
+
+var cloudPercentageTextbox = ui.Textbox({
+    placeholder: '10',
+    value: '10',
+    style: { maxWidth: '90px' }
+});
+
+var cloudConfigPanel = ui.Panel({
+    layout: ui.Panel.Layout.flow('horizontal'),
+    widgets: [CloudTextLabel, cloudPercentageTextbox]
+});
+panel.add(cloudConfigPanel);
+
+// 5.2. Add index selector
+var indexSelector = ui.Panel({
+  layout: ui.Panel.Layout.flow('vertical'),
+  style: St.styleDatWiget, //border: '0.5px solid #000000' 
+  widgets: [
+    ui.Label({ value: 'Select Satellite and Mangrove Index', style: St.styleWiget }),
+  ]
+});
+var minPalete;
+var maxPalete;
+var Sensor = ui.Select({ 
+ items: [ 
+        { label:"1. LANDSAT-8", value: 0 }, 
+        { label:"2. SENTINEL-2", value: 1}, 
+ ],
+placeholder: 'Select a satellite',
+value: 0,
+style: { width: '270px', border: '1px solid darkgray' },
+});
+panel.add(indexSelector);
+panel.add(Sensor);
+
+var MangroveIndex = ui.Select({
+  items: [
+          { label: "1. MI", value: 0},
+          { label: "2. CMRI", value: 1},
+          { label: "3. MVI", value: 2},
+          { label: "4. NDMI", value: 3},
+          { label: "5. REMI", value: 4},
+          //{ label: "6. NIMI", value: 5},
+          //{ label: "7. MFI", value: 6},
+          ],
+placeholder: 'Select a Mangrove Index',
+value: 0,
+style: { width: '270px', border: '1px solid darkgray' },
+});
+panel.add(MangroveIndex);
+
+// Function to Filter Images Covering The Entiner Polygon
+var Pol=ui.Checkbox({label:'Filter images covering the entire polygon',value: true,style: {color: '#dc7a55', width: '280px'}})
+var PolT= ui.Panel({
+      layout: ui.Panel.Layout.flow("horizontal"),
+      style: {position: 'top-center'},
+      widgets: [Pol]
+  });
+panel.add(Pol);
+
+// Function to Collect Landsat-8 Image
+function LandsatCollectionSR(dates, code, aoi, threshold) {
+  var collection = 'LANDSAT/' + code + '/C02/T1_L2'
+  // Load Landsat image collections based on sensor type
+  var landsatCollection = ee.ImageCollection(collection)
+    .filterDate(dates[0], dates[1]) // Filter by date range
+    .filterBounds(aoi) // Filter by region of interest
+    .filter(ee.Filter.lte('CLOUD_COVER', threshold)); // Filter by cloud cover threshold
+  
+   // Select only relevant bands before renaming
+  var filteredCollection = landsatCollection.select([
+    'SR_B2', // Blue
+    'SR_B3', // Green
+    'SR_B4', // Red
+    'SR_B5', // NIR
+    'SR_B6', // SWIR1
+    'SR_B7'  // SWIR2
+  ]);
+
+  // Map and rename bands to match Landsat naming conventions
+  var renamedCollection = filteredCollection.map(function(image) {
+    return image.rename([
+      'blue',
+      'green',
+      'red',
+      'nir',
+      'swir1',
+      'swir2'
+    ]);
+  });
+
+  return renamedCollection;
+}
+
+// Function to Calling Satelite to Calculate
+function ImageCollectionSR(dates, aoi, threshold)
+{
+  var L8sr = LandsatCollectionSR(dates, 'LC08', aoi, threshold);
+  var L8a = L8sr.select(['blue', 'green', 'red', 'nir', 'swir1', 'swir2']);
+	return L8a;
+}
+
+// Function to Collect Sentinel-2 
+function ImageCollectionSentinelSR(dates, aoi, threshold) {
+  // Load Sentinel-2 Surface Reflectance image collection
+  var sentinelCollection = ee.ImageCollection('COPERNICUS/S2_SR')
+    .filterDate(dates[0], dates[1]) // Filter by date range
+    .filterBounds(aoi) // Filter by region of interest
+    .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', threshold)); // Filter by cloud cover threshold
+
+   // Select only relevant bands before renaming
+  var filteredCollection = sentinelCollection.select([
+    'B2', // Blue
+    'B3', // Green
+    'B4', // Red
+    'B5', // Vegetation Red Edge1
+    'B6', // Vegetation Red Edge2
+    'B7', // Vegetation Red Edge3
+    'B8', // NIR
+    'B8A', // Vegetation Red Edge4
+    'B11', // SWIR1
+    'B12'  // SWIR2
+  ]);
+
+  // Map and rename bands to match Sentinel naming conventions
+  var renamedCollection = filteredCollection.map(function(image) {
+    return image.rename([
+      'blue', // B2
+      'green', // B3
+      'red', // B4
+      'vegetation red edge1', // B5
+      'vegetation red edge2', // B6
+      'vegetation red edge3', // B7
+      'nir', // B8
+      'vegetation red edge4', // B8A
+      'swir1', // B11
+      'swir2'  // B12
+    ]);
+  });
+
+  return renamedCollection;
+}
+function maskClouds(img) {
+  var clouds = ee.Image(img.get('cloud_mask')).select('probability');
+  var isNotCloud = clouds.lt(90);
+  return img.updateMask(isNotCloud);
+}
+var minBox_C1 =ui.Textbox({value:0, placeholder: '0', style:St.TexBoxValueIndex});
+var maxBox_C1 =ui.Textbox({value:1, placeholder: '1', style:St.TexBoxValueIndex});
+
+// Fucntion to Download Result
+var DownloadC1_Button = ui.Label({value:"⇓", style: St.ButonDonwload});
+var DownloadC2_Button = ui.Label({value:"⇓", style:St.ButonDonwload});
+var downloadVFile= ui.Panel({
+    layout: ui.Panel.Layout.flow("horizontal"),
+    style: {backgroundColor: "#eceaea", position: 'top-center',shown: true},
+    widgets: [ui.Label('download vector file',{backgroundColor: "#eceaea", color: '#615b58',width: '270px'}),DownloadC2_Button]
+});
+var downloadIV= ui.Panel({
+    layout: ui.Panel.Layout.flow("horizontal"),
+    style: {backgroundColor: "#eceaea", position: 'top-center',shown: true},
+    widgets: [ui.Label('download mangrove index map',{backgroundColor: "#eceaea", color: '#615b58',width: '270px'}),DownloadC1_Button]
+});
+panel.add(downloadIV);
+panel.add(downloadVFile)
+downloadVFile.style().set('shown', false);
+downloadIV.style().set('shown', false);
+
+function buildSelectDisplay(number) {
+  if (number==0) {
+    minBox_C1.setValue(-1);
+    maxBox_C1.setValue(1);
+  }
+  else if (number==1) {
+    minBox_C1.setValue(-1);
+    maxBox_C1.setValue(1);
+  }
+  else if (number==2) {
+    minBox_C1.setValue(0);
+    maxBox_C1.setValue(20);
+  }
+  else if (number==3) {
+    minBox_C1.setValue(-1);
+    maxBox_C1.setValue(1);
+  }
+  else if (number==4) {
+    minBox_C1.setValue(-1);
+    maxBox_C1.setValue(1);
+  }
+  else if (number==5) {
+    minBox_C1.setValue(-1);
+    maxBox_C1.setValue(1);
+  }
+  else if (number==6) {
+    minBox_C1.setValue(-1);
+    maxBox_C1.setValue(1);
+  }
+   valC1.style().set('shown', true); //clase 1
+   minBox_C1.setDisabled(true);
+   maxBox_C1.setDisabled(true);
+}
+
+function MI (image) {
+  //Calculate MI Using This Formula
+  var MI = image.expression(
+  'float((NIR-SWIR)/(NIR*SWIR))*10000',{
+    NIR: image.select('nir'),  // Near-Infrared band
+    SWIR: image.select('swir1') // Shortwave Infrared band
+  });
+  // Rename the band to "MI", convert to float, and copy metadata
+  MI = MI.rename(['MI'])
+         .float()
+         .copyProperties(image, ["system:time_start", "satelite", "sensor", "tile"]);
+  return MI;
+}
+function CMRI (image) {
+  // Calculate CMRI Using This Formula
+  var CMRI = image.expression(
+  '((NIR - R) / (NIR + R)) - ((G - NIR) / (G + NIR))',{
+  NIR: image.select('nir'),  // Near-Infrared band
+  R: image.select('red'), // Red band
+  G: image.select('green'), // Green band
+  });
+  //Rename the band to "CMRI", convert float, and copy metadata
+  CMRI = CMRI.rename(['CMRI'])
+             .float()  // Ensure the result is in float format
+             .copyProperties(image, ["system:time_start", "satelite", "sensor", "tile"]);  
+  return CMRI;
+}
+function MVI (image) {
+  // Calculate MVI Using This Formula
+  var MVI = image.expression(
+  '((NIR - G) / (SWIR - G))',{
+  NIR: image.select('nir'),  // Near-Infrared band
+  SWIR: image.select('swir1'), // Shortwave Infrared band
+  G: image.select('green'), // Green band
+  });
+  // Rename the band to "MVI", convert to float, and copy metadata
+  MVI = MVI.rename(['MVI'])
+         .float()
+         .copyProperties(image, ["system:time_start", "satelite", "sensor", "tile"]);
+  return MVI;
+}
+function NDMI (image) {
+  // Calculate NDMI Using This Formula
+  var NDMI = image.expression(
+  '((SWIR2 - G) / (SWIR2 + G))', {
+  SWIR2: image.select('swir2'), // Shortwave Infrared band (2)
+  G: image.select('green'), // Green band
+  });
+  // Rename the band to "NDMI", convert to float, and copy metadata
+  NDMI = NDMI.rename(['NDMI'])
+         .float()
+         .copyProperties(image, ["system:time_start", "satelite", "sensor", "tile"]);
+
+  return NDMI;
+}
+function REMI (image) {
+  // Calculate REMI Using This Formula
+ var REMI = image.expression(
+  '((RedEdge - Red) / (SWIR1 - Green))', { // Formula for REMI
+      RedEdge: image.select('vegetation red edge1'),  // Red Edge band
+      Red: image.select('red'),     // Red band
+      SWIR1: image.select('swir1'),  // SWIR1 band
+      Green: image.select('green'),    // Green band
+  });
+  // Rename the band to "REMI", convert to float, and copy metadata
+  REMI = REMI.rename(['REMI'])
+         .float()
+         .copyProperties(image, ["system:time_start", "satelite", "sensor", "tile"]);
+
+  return REMI; 
+}
+function NIMI (image) {
+  // Calculate NIMI Using This Formula
+  var NIMI = image.expression(
+   '((3 * B4) - (B6 + B7 + B8A)) / ((3 * B4) + (B6 + B7 + B8A))', {
+      B4: image.select('red'), // Red
+      B6: image.select('vegetation red edge2'), // Vegetation Red Edge2
+      B7: image.select('vegetation red edge3'), // Vegetation Red Edge3
+      B8A: image.select('vegetation red edge4')  // Vegetation Red Edge4
+  });
+  // Rename the band to "REMI", convert to float, and copy metadata
+  NIMI = NIMI.rename(['NIMI'])
+         .float()
+         .copyProperties(image, ["system:time_start", "satelite", "sensor", "tile"]);
+
+  return NIMI; 
+}
+function MFI(image) {
+  // Define center wavelengths
+  var lambda1 = 705;
+  var lambda2 = 740;
+  var lambda3 = 783;
+  var lambda4 = 865;
+
+  // Function to calculate Baseline
+function calculateBaselineReflectance(image, lambda) {
+  var rho665 = image.select('red'); // Band 665 nm
+  var rho2190 = image.select('swir2'); // Band 2190 nm
+  return rho2190.add(
+    rho665.subtract(rho2190)
+      .multiply(2190 - lambda)
+      .divide(2190 - 665)
+  );
+}
+
+// Function to select band
+var rho_lambda1 = image.select('vegetation red edge1'); // Band 705 nm
+var rho_lambda2 = image.select('vegetation red edge2'); // Band 740 nm
+var rho_lambda3 = image.select('vegetation red edge3'); // Band 783 nm
+var rho_lambda4 = image.select('vegetation red edge4'); // Band 865 nm
+
+// Calculate Baseline Reflectance
+var rhoB_lambda1 = calculateBaselineReflectance(image, 705);
+var rhoB_lambda2 = calculateBaselineReflectance(image, 740);
+var rhoB_lambda3 = calculateBaselineReflectance(image, 783);
+var rhoB_lambda4 = calculateBaselineReflectance(image, 865);
+
+// Calculate MFI
+var MFI = rho_lambda1.subtract(rhoB_lambda1)
+  .add(rho_lambda2.subtract(rhoB_lambda2))
+  .add(rho_lambda3.subtract(rhoB_lambda3))
+  .add(rho_lambda4.subtract(rhoB_lambda4))
+  .divide(4);
+
+  // Rename the band to "MFI", convert to float, and copy metadata
+  MFI = MFI.rename(['MFI'])
+    .float()
+    .copyProperties(image, ["system:time_start", "satellite", "sensor", "tile"]);
+
+  return MFI;
+}
+
+
+function Legend(title, vis) {
+  // Creates a small thumbnail of the color bar to use 
+  // in the legend for the given color palette
+  function ColorBarParams(palette) {
+    return {
+      bbox: [0, 0, 1, 0.1],              // Dimensions of the color bar (relative)
+      dimensions: '100x10',              // Resolution of the color bar
+      format: 'png',                     // Output format
+      min: 0,                            // Minimum value for the scale
+      max: 1,                            // Maximum value for the scale
+      palette: palette,                  // Color palette to use
+    };
+  }
+
+  // Creates the color bar for the legend
+  var ColorBar = ui.Thumbnail({
+    image: ee.Image.pixelLonLat().select(0), // Placeholder image to create the thumbnail
+    params: ColorBarParams(vis.palette),     // Parameters from the function above
+    style: {stretch: 'horizontal', margin: '0px 8px', maxHeight: '24px'},
+  });
+
+  // Creates a panel with three numbers for the legend
+  var LegendLabels = ui.Panel({
+    widgets: [
+      ui.Label(Math.round(100 * vis.min) / 100, {margin: '4px 8px'}), // Label for the minimum value
+      ui.Label(
+          Math.round(100 * (vis.max + vis.min) / 2) / 100,             // Label for the midpoint value
+          {margin: '4px 8px', textAlign: 'center', stretch: 'horizontal'}),
+      ui.Label(Math.round(100 * vis.max) / 100, {margin: '4px 8px'})   // Label for the maximum value
+    ],
+    layout: ui.Panel.Layout.flow('horizontal')                        // Horizontal layout
+  });
+
+  // Creates the legend title
+  var LegendTitle = ui.Label({
+    value: title,                        // The title provided as a parameter
+    style: {fontWeight: 'bold'}          // Bold font style
+  });
+
+  // Returns the legend panel
+  var LegendPanel = ui.Panel({style: {position: 'bottom-left'}}); // Position the panel at the bottom left
+  LegendPanel.widgets().set(0, LegendTitle);                     // Add the title to the panel
+  LegendPanel.widgets().set(1, ColorBar);                        // Add the color bar to the panel
+  LegendPanel.widgets().set(2, LegendLabels);                    // Add the labels to the panel
+  return LegendPanel;
+}
+
+function getVectorFile (clippingArea){ 
+// Export an ee.FeatureCollection as an Earth Engine asset.
+    var srr=ee.FeatureCollection(clippingArea);
+    var downloadUrl = srr
+                    .getDownloadURL({ 
+                      format:'kml',
+                      filename: 'Polygons'});
+    return downloadUrl;
+}
+
+function getName(imagen){
+      var time_start=imagen.get('system:time_start');
+      var date=ee.Date(time_start);
+      var year=ee.Number(date.get('year'));
+      var month=ee.Number(date.get('month'));
+      var day=ee.Number(date.get('day'));
+      // var sensor=imagen.get('sensor');
+      // var satelite=imagen.get('satelite');
+      var Name_image=ee.String(year)
+        .cat(ee.String('_'))
+        .cat(ee.String(month))
+        .cat(ee.String('_'))
+        .cat(ee.String(day));
+        // .cat(ee.String('_'))
+        // .cat(ee.String(satelite))
+        // .cat(ee.String('_'))
+        // .cat(ee.String(sensor))
+      return  Name_image;
+ }
+
+ function getURLNDVI(image, index, clippingArea, scale){ 
+    var Name=getName(image);
+    var clippingArea2=image.clip(clippingArea.geometry());
+    var NameMap=Name.cat(ee.String('_'+index));
+    var NameDownload=NameMap.getInfo();
+    var downloadUrl = ((clippingArea2.select(index)).multiply(10000).int()).divide(10000)
+                    .getDownloadURL({ 
+                      name: NameDownload,
+                      scale: scale});
+    return downloadUrl;
+}
+
+function NewPolygon()
+{
+  Map.clear(); 
+  //Map.setControlVisibility(true, true, true, true, true, true, true);
+  drawingTools.clear();
+  // proc3.setDisabled(true)
+  Map.setCenter(110.28425999765646, -8.00521772256479, 15);
+ Map.style().set('cursor', 'hand');
+}
+
+// Function To Calculate
+function Calculate() {
+  // Create a panel for results
+  var panel1 = ui.Panel([], ui.Panel.Layout.Flow('vertical'), { position: 'top-right' });
+  proc2.setDisabled(false);
+
+  // 1) Stop drawing and import the layer created by the user
+  drawingTools.stop();
+  var module = drawingTools.getMap();
+  var om = drawingTools.toFeatureCollection(module);
+
+  // Hide the layer created by the user
+  Map.drawingTools().layers().forEach(function(layer) {
+    layer.setShown(false);
+  });
+
+  // Begin importing all image-related data
+  var threshold = parseFloat(cloudPercentageTextbox.getValue());
+  var startDate = startDateTextbox.getValue();
+  var endDate = endDateTextbox.getValue();
+  var dates = [startDate, endDate];
+  var selectedIndex = MangroveIndex.getValue();
+  var selectedSensor = Sensor.getValue();
+  var polynomialResponse = Pol.getValue();
+  var clippingArea = om;
+
+  // Log inputs for debugging
+  console.log(startDate, endDate, dates, selectedIndex, selectedSensor, polynomialResponse, clippingArea);
+
+  var S2A; // For Sentinel-2 data
+  var S2B; // For Landsat-8 data
+  var scale; // Spatial resolution (scale)
+  var VisRGB; // Visualization placeholder
+
+ 
+  // Create image collection based on selected sensor
+  if (selectedSensor === 0) {
+    // Landsat 8: Filter by date and region
+    S2B = ImageCollectionSR(dates, clippingArea, threshold);
+    scale = 10; // Landsat resolution
+  } else if (selectedSensor === 1) {
+    // Sentinel-2: Filter by date, region, and cloud threshold
+    S2B = ImageCollectionSentinelSR(dates, clippingArea, threshold);
+    scale = 10; // Sentinel-2 resolution
+  } else {
+    console.log("Invalid sensor selected.");
+    return;
+  }
+  
+   print(S2B)
+
+  // Filter images to those that fully contain the polygon (if applicable)
+  if (polynomialResponse === true && clippingArea) {
+    S2B = ee.ImageCollection(S2B.filter(ee.Filter.contains('.geo', clippingArea.geometry())));
+  } else {
+    S2B = S2B;
+  }
+  
+  console.log("S2B Size")
+  console.log(S2B.size())
+  
+  var lis_S2A=S2B.toList(S2B.size());
+  S2A=ee.ImageCollection(lis_S2A)
+  var im = S2A.first();
+  
+  if (selectedIndex === 0) {
+    ims = ee.ImageCollection(S2A.map(MI));
+    indexName = 'MI';
+    // buildSelectDisplay(7);
+    // MI
+  } else if (selectedIndex === 1) {
+    // CMRI
+    ims = ee.ImageCollection(S2A.map(CMRI));
+    indexName = 'CMRI';
+  }else if (selectedIndex === 2) {
+    // MVI
+    ims = ee.ImageCollection(S2A.map(MVI));
+    indexName = 'MVI';
+  }else if (selectedIndex === 3) {
+    // NDMI
+    ims = ee.ImageCollection(S2A.map(NDMI));
+    indexName = 'NDMI';
+  }else if (selectedIndex === 4) {
+    // REMI
+    ims = ee.ImageCollection(S2A.map(REMI));
+    indexName = 'REMI';
+  }else if (selectedIndex ===5) {
+    // NIMI
+    ims = ee.ImageCollection(S2A.map(NIMI));
+    indexName = 'NIMI';
+  }else if (selectedIndex ===6) {
+    // MFI
+    ims = ee.ImageCollection(S2A.map(MFI));
+    indexName = 'MFI';
+  }
+  
+  function buildImageSelect(items, imVis, reVis, indexName, clippingArea,Pr_Response,lis_S2A,prodVis, indSel,scale){ 
+       var imageSelect = ui.Select({ 
+           items: items, 
+           value:0,
+           placeholder: "List of Images", 
+           style: { width: '95%', margin: '10px 10px 10px 10px', position: 'top-center'},
+           onChange: function (value){
+                    var im=ee.Image(uris.get(value));
+                    var layer1=ui.Map.Layer(im.clip(clippingArea), imVis, indexName);
+                    var layer2= ui.Map.Layer((ee.Image(lis_S2A.get(value))).clip(clippingArea), St.vizParams, 'RGB');
+                    if (Pr_Response===true) {
+                        if (Re_Response===true) { 
+                              Map.layers().reset([layer2,layer1, layer3]); 
+                        }
+                        else {
+                              Map.layers().reset([layer2,layer1, layer3]);
+                        }
+                    }
+                    else {
+                        if (Re_Response===true) { 
+                              Map.layers().reset([layer2, layer1]);  
+                        }
+                        else {
+                              Map.layers().reset([layer2,layer1]);
+                        }
+                    }    
+                    DownloadC1_Button.setUrl(getURLNDVI(im,indexName, clippingArea,scale,indexName ));
+                    minBox_C1.setDisabled(false);
+                    maxBox_C1.setDisabled(false); 
+              //=============================================
+              //WHEN CLASS 1 CHANGES
+              //============================================
+              minBox_C1.onChange(function(value) {
+      
+                    imVis.min =parseFloat(value);
+                    layer1.setVisParams(imVis);
+                    var pan1 = Legend(indexName, imVis);
+                    panelLegend.widgets().set(2, pan1.widgets().get(2));
+                    layer1 = ui.Map.Layer(iv.clip(clippingArea), imVis, indexName);
+                    if (Pr_Response===true) {
+                        if (Re_Response===true) { 
+                              Map.layers().reset([layer2,layer1, layer3]); 
+                        }
+                        else {
+                              Map.layers().reset([layer2,layer1, layer3]);
+                        }
+                    }
+                    else {
+                        if (Re_Response===true) { 
+                              Map.layers().reset([layer2, layer1]);  
+                        }
+                        else {
+                              Map.layers().reset([layer2,layer1]);
+                        }         
+                    }
+              });
+              maxBox_C1.onChange(function(value) {
+                    imVis.max =parseFloat(value);
+                    layer1.setVisParams(imVis);
+                    var pan1 = Legend(indexName, imVis);
+                    panelLegend.widgets().set(2, pan1.widgets().get(2));
+                    layer1 = ui.Map.Layer(iv.clip(clippingArea), imVis, indexName);
+                    if (Pr_Response===true) {
+                        if (Re_Response===true) { 
+                              Map.layers().reset([layer2,layer1, layer3]); 
+                        }
+                        else {
+                              Map.layers().reset([layer2,layer1, layer3]);
+                        }
+                    }
+                    else {
+                        if (Re_Response===true) { 
+                              Map.layers().reset([layer2, layer1]);  
+                        }
+                        else {
+                              Map.layers().reset([layer2,layer1]);
+                        }         
+                    }
+              });  
+            }
+       });
+       return imageSelect; 
+}
+  
+  downloadIV.style().set('shown', true);
+  downloadVFile.style().set('shown', true);  
+  minPalete=parseFloat(minBox_C1.getValue());
+  maxPalete=parseFloat(maxBox_C1.getValue());
+  
+  // Draw clippingArea result as an image
+  var clipArearesult = ee.Image().byte();
+  border = clipArearesult.paint({
+    featureCollection: clippingArea,
+    color: 1,
+    width: 1
+  });
+  Map.clear(); 
+  Map.centerObject(clippingArea, 13);
+  Map.setControlVisibility(true, true, false, true, true, true, false);
+  
+  var mosf = ee.Date(ee.Image(S2A.first()).get('system:time_start'));
+  var iv = ims.first();
+  im = S2A.filterDate(mosf.advance(-0.5, 'hour'), mosf.advance(0.5, 'hour'));
+  var panL2;
+  prodVis = {min : 0.5, max : 1.5, palette : St.paletaProd};
+  imVis = {min :minPalete, max : maxPalete, palette : St.paletaIV};
+  Map.addLayer(im.mosaic().clip(clippingArea), St.vizParams, 'RGB'); //RGB
+  Map.addLayer(iv.clip(clippingArea), imVis, indexName); //Index
+  
+  Map.addLayer(border, {palette: 'black'}, 'Polygons');
+  panelLegend = Legend(indexName, imVis);
+  Map.add(panelLegend);
+  
+  //The lists are generated to extract information
+  var uris=ims.toList(ims.size());
+  var imageSelect = null;
+  // S2A.evaluate(function(col){ //The dates are added to a listbox
+//           var items = []; 
+//           var i = 0;
+//           col.features.forEach(function(feature){ 
+//                 var label = i + ". " + feature.properties.date + " / " 
+//                 + feature.properties.sensor + " / " + feature.properties.cloudiness + " % ";
+//                 var value = i;
+//             items.push({label: label, value: value});
+//             i = i + 1;
+//           }); 
+//           imageSelect = buildImageSelect(items, uris, i, imVis, reVis, indexName, clippingArea, polynomialResponse, lis_S2A, prodVis, layer4, selectedIndex, scale);
+//           // var image2Label = ui.Label('Select a date to view VI map');
+//           var query2Panel = ui.Panel();
+//           // panel1.add(image2Label)
+//           panel1.add(imageSelect)
+//           panel1.add(query2Panel)
+// }); 
+ 
+  DownloadC1_Button.setUrl(getURLNDVI(iv,indexName, clippingArea,scale));
+  DownloadC2_Button.setUrl(getVectorFile(clippingArea));
+
+   Map.add(panel1);
+}
+
+  
+var proc = ui.Button('Calculate', Calculate, false, {margin: 'auto', padding: '5px', width: '110px', fontSize: '15px'});
+var proc2 = ui.Button('New polygon', NewPolygon, false, {margin: 'auto', padding: '5px', width: '110px', fontSize: '15px'});
+var procHelp= ui.Panel({
+      layout: ui.Panel.Layout.flow("horizontal"),
+      style: {position: 'top-center'},
+      widgets: [proc2, proc]
+  });
+panel.add(procHelp);
+
+ui.root.insert(0, panel);
