@@ -47,11 +47,13 @@ var FAQ_PANEL = ui.Panel({
     widgets: [
         ui.Label({ value: 'How to use this Tool?', style: St.titleWidwet }), 
         ui.Label({ value: '1. Draw a polygon to the area you need to calculate ', style: St.conte }),
-        ui.Label({ value: '2. Enter a start and end date for the time series, using the format Year-month-day (xxxx-xx-xx)', style: St.conte }),
+        ui.Label({ value: '2. Enter a start and end date using the format Year-month-day (xxxx-xx-xx)', style: St.conte }),
         ui.Label({ value: '3. Select a set of images: 1) Landsat-8, 2) Sentinel-2', style: St.conte }),
         ui.Label({ value: '4. Select a mangrove index you need to calculate', style: St.conte }),
         ui.Label({ value: '5. Click on "Calculate" and the selected mangrove index for the polygon appears on the map', style: St.conte }),        
         ui.Label({ value: '6. Click on "New Polygon" to calculate the mangrove index of other polygons', style: St.conte }),
+        ui.Label({ value: '7. The legend after the calculation results are displayed shows whether or not there are mangroves in the area being studied.', style: St.conte }),
+        ui.Label({ value: '8. For the classification of mangrove index calculation results, please refer to our article.'}),
     ],
     style: { position: 'top-center', shown: true, width: '30%', height: '50%', padding: '5px', margin: '10px' }
     
@@ -330,7 +332,7 @@ function maskClouds(img) {
   var isNotCloud = clouds.lt(90);
   return img.updateMask(isNotCloud);
 }
-var minBox_C1 =ui.Textbox({value:0, placeholder: '0', style:St.TexBoxValueIndex});
+var minBox_C1 =ui.Textbox({value:0, placeholder: '-1', style:St.TexBoxValueIndex});
 var maxBox_C1 =ui.Textbox({value:1, placeholder: '1', style:St.TexBoxValueIndex});
 
 // Fucntion to Download Result
@@ -542,11 +544,17 @@ function Legend(title, vis) {
   // Creates a panel with three numbers for the legend
   var LegendLabels = ui.Panel({
     widgets: [
-      ui.Label(Math.round(100 * vis.min) / 100, {margin: '4px 8px'}), // Label for the minimum value
-      ui.Label(
-          Math.round(100 * (vis.max + vis.min) / 2) / 100,             // Label for the midpoint value
-          {margin: '4px 8px', textAlign: 'center', stretch: 'horizontal'}),
-      ui.Label(Math.round(100 * vis.max) / 100, {margin: '4px 8px'})   // Label for the maximum value
+      ui.Label(Math.round(100 * -1 ) / 100, {margin: '4px 8px'}), // Label for the minimum value 
+      ui.Label(Math.round(100 * 1) / 100, {margin: '4px 8px', textAlign: 'right', stretch: 'horizontal'})   // Label for the maximum value 
+    ],
+    layout: ui.Panel.Layout.flow('horizontal')                        // Horizontal layout
+  });
+  
+  var LegendLabels2 = ui.Panel({
+    widgets: [
+      ui.Label('Non-Mangrove to Mangrove', {margin: '4px 8px', textAlign: 'left', stretch: 'horizontal'}), // Label for Non Mangrove
+      // ui.Label('to', {margin: '4px 8px', textAlign: 'center', stretch: 'horizontal', width: '72px'}), // Middle
+      // ui.Label('Mangrove', {margin: '4px 8px', textAlign: 'right', stretch: 'horizontal', width: '72px'}), // Label for Mangrove
     ],
     layout: ui.Panel.Layout.flow('horizontal')                        // Horizontal layout
   });
@@ -560,8 +568,9 @@ function Legend(title, vis) {
   // Returns the legend panel
   var LegendPanel = ui.Panel({style: {position: 'bottom-left'}}); // Position the panel at the bottom left
   LegendPanel.widgets().set(0, LegendTitle);                     // Add the title to the panel
-  LegendPanel.widgets().set(1, ColorBar);                        // Add the color bar to the panel
-  LegendPanel.widgets().set(2, LegendLabels);                    // Add the labels to the panel
+  LegendPanel.widgets().set(1, LegendLabels);                    // Add the labels to the panel
+  LegendPanel.widgets().set(2, ColorBar);                        // Add the color bar to the panel
+  LegendPanel.widgets().set(3, LegendLabels2);                  // Add the labels to the panel
   return LegendPanel;
 }
 
